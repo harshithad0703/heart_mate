@@ -1,19 +1,17 @@
-import React from 'react';
-import './Header.css';
-
+import React from "react";
+import { Link } from "react-router-dom";
+import "./Header.css";
 
 const Header = () => {
   return (
     <header className="app-header">
       <div className="header-content">
         <div className="header-logo">
-        
+          <Link to="/">
+            {" "}
+            {/* 👈 takes you to homepage route */}
             <img src="/logo.png" alt="App Logo" />
-          
-          {/* <div className="logo-text">
-            <h1>Tricog Health</h1>
-            <p>AI-Powered Cardiac Care Assistant</p>
-          </div> */}
+          </Link>
         </div>
 
         <div className="header-info">

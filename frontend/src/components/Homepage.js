@@ -76,65 +76,88 @@ export default function HomePage() {
   return (
     <>
       <Header />
-      <div className="homepage">
-        {/* Left Heart Icon */}
-        <div className="heart-section">
-          <img src="/heart.png" alt="Heart" />
-        </div>
 
-        {/* Right Form */}
-        <div className="form-card">
-          <div className="tabs">
-            <button
-              className={activeTab === "patient" ? "active" : ""}
-              onClick={() => setActiveTab("patient")}
-            >
-              Patient
-            </button>
-            <button
-              className={activeTab === "doctor" ? "active" : ""}
-              onClick={() => setActiveTab("doctor")}
-            >
-              Doctor
-            </button>
+      <div className="homepage">
+        {/* Welcome text section */}
+        <div className="welcome-text">
+          <h2>Welcome to Doctor’s AI Assistant for Cardiology Consults</h2>
+          <p>
+            Please click on <strong>Patient</strong> tab if you are a patient
+            and on <strong>Doctor</strong> tab if you are a doctor to proceed.
+          </p>
+        </div>
+        <div className="main">
+          {/* Left Heart Icon */}
+          <div className="heart-section">
+            <img src="/heart3.png" alt="Heart" />
           </div>
 
-          <form className="form" onSubmit={handleSubmit}>
-            <input
-              type="email"
-              name="email"
-              placeholder="Email"
-              onChange={handleChange}
-              required
-            />
-            {activeTab === "patient" && (
-              <input
-                type="text"
-                name="fullName"
-                placeholder="Full Name"
-                onChange={handleChange}
-                required
-              />
-            )}
-            {activeTab === "doctor" && (
-              <input
-                type="password"
-                name="password"
-                placeholder="Password"
-                onChange={handleChange}
-                required
-              />
-            )}
-            <button type="submit" className="submit-btn">
-              Submit
-            </button>
-          </form>
-        </div>
+          {/* Right Form */}
+          <div className="form-card">
+            <div className="tabs">
+              <button
+                className={activeTab === "patient" ? "active" : ""}
+                onClick={() => setActiveTab("patient")}
+              >
+                Patient
+              </button>
+              <button
+                className={activeTab === "doctor" ? "active" : ""}
+                onClick={() => setActiveTab("doctor")}
+              >
+                Doctor
+              </button>
+            </div>
 
-        {/* Floating Chat Button */}
-        <button className="chat-btn" onClick={startChat}>
-          <FaComments size={22} />
-        </button>
+            <form className="form" onSubmit={handleSubmit}>
+              {/* Email */}
+              <label htmlFor="email">Email</label>
+              <input
+                id="email"
+                type="email"
+                name="email"
+                placeholder="Enter your email"
+                onChange={handleChange}
+                required
+              />
+
+              {/* Patient field */}
+              {activeTab === "patient" && (
+                <>
+                  <label htmlFor="fullName">Full Name</label>
+                  <input
+                    id="fullName"
+                    type="text"
+                    name="fullName"
+                    placeholder="Enter your full name"
+                    onChange={handleChange}
+                    required
+                  />
+                </>
+              )}
+
+              {/* Doctor field */}
+              {activeTab === "doctor" && (
+                <>
+                  <label htmlFor="password">Password</label>
+                  <input
+                    id="password"
+                    type="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    onChange={handleChange}
+                    required
+                  />
+                </>
+              )}
+
+              <button type="submit" className="submit-btn">
+                Submit
+              </button>
+            </form>
+          </div>
+        </div>
+       
       </div>
     </>
   );

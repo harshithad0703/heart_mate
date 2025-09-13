@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom"; // ✅ Import for navigation
 import io from "socket.io-client";
 import ChatContainer from "./ChatContainer";
 import ConnectionStatus from "./ConnectionStatus";
 import Header from "./Header";
-
 
 function Chat() {
   const [socket, setSocket] = useState(null);
@@ -11,6 +11,7 @@ function Chat() {
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
   const socketRef = useRef(null);
+  const navigate = useNavigate(); // ✅ Hook for navigation
 
   useEffect(() => {
     const newSocket = io("http://localhost:8024", {
@@ -121,6 +122,24 @@ function Chat() {
   return (
     <div className="App">
       <Header />
+
+      {/* ✅ Back to Home Button */}
+      <div style={{ padding: "10px" }}>
+        <button
+          onClick={() => navigate("/")}
+          style={{
+            background: "#01294E",
+            color: "white",
+            padding: "8px 16px",
+            border: "none",
+            borderRadius: "8px",
+            cursor: "pointer",
+          }}
+        >
+          Home
+        </button>
+      </div>
+
       <ConnectionStatus isConnected={isConnected} />
       <main className="app-main">
         <ChatContainer
@@ -131,9 +150,6 @@ function Chat() {
           isConnected={isConnected}
         />
       </main>
-      {/* <footer className="app-footer">
-        <p>Tricog Health Assistant - Secure Healthcare Communication</p>
-      </footer> */}
     </div>
   );
 }
