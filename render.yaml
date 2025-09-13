@@ -27,5 +27,5 @@ services:
         sync: false
     disks:
       - name: data
-        mountPath: /var/data
+        mountPath: /var/data/tricog_health.db
 
