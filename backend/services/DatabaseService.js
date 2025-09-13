@@ -46,6 +46,7 @@ class DatabaseService {
           name TEXT,
           email TEXT,
           phone TEXT,
+          severity TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`,
@@ -94,10 +95,46 @@ class DatabaseService {
           }
           completed++;
           if (completed === queries.length) {
-            console.log("All tables created successfully");
-            resolve();
+            // After base tables exist, ensure migrations like missing columns
+            this.ensurePatientsSeverityColumn()
+              .then(() => {
+                console.log("All tables created successfully");
+                resolve();
+              })
+              .catch((migrationErr) => {
+                console.error("Error ensuring severity column:", migrationErr);
+                // Continue resolving even if migration failed to avoid blocking startup
+                resolve();
+              });
           }
         });
+      });
+    });
+  }
+
+  async ensurePatientsSeverityColumn() {
+    return new Promise((resolve, reject) => {
+      this.db.all("PRAGMA table_info(patients)", (err, rows) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        const hasSeverity = rows.some((col) => col.name === "severity");
+        if (hasSeverity) {
+          resolve();
+          return;
+        }
+        this.db.run(
+          "ALTER TABLE patients ADD COLUMN severity TEXT",
+          (alterErr) => {
+            if (alterErr) {
+              reject(alterErr);
+            } else {
+              console.log("Added severity column to patients table");
+              resolve();
+            }
+          }
+        );
       });
     });
   }
@@ -301,6 +338,23 @@ class DatabaseService {
           }
         }
       );
+    });
+  }
+
+  async updatePatientSeverity(patientId, severity) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        UPDATE patients
+        SET severity = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `;
+      this.db.run(query, [severity, patientId], function (err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({ changes: this.changes });
+        }
+      });
     });
   }
 

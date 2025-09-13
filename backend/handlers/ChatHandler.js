@@ -6,6 +6,13 @@ class ChatHandler {
     this.geminiService = geminiService;
     this.telegramService = telegramService;
     this.calendarService = calendarService;
+    try {
+      const SeverityService = require("../services/SeverityService");
+      this.severityService = new SeverityService();
+    } catch (e) {
+      console.error("Failed to initialize SeverityService:", e.message);
+      this.severityService = null;
+    }
 
     // Session management
     this.sessions = new Map(); // socketId -> session data
@@ -327,6 +334,19 @@ class ChatHandler {
         responses: session.responses,
       };
 
+      // Analyze severity silently (doctor-only visibility)
+      let severity = { level: "LOW", decorated: "🟢 Low" };
+      try {
+        if (this.severityService) {
+          severity = this.severityService.analyze(
+            session.currentSymptom.name,
+            session.responses
+          );
+        }
+      } catch (sevErr) {
+        console.error("Severity analysis failed:", sevErr.message);
+      }
+
       await this.dbService.savePatientSymptom(
         session.patient.id,
         session.currentSymptom.name,
@@ -334,13 +354,25 @@ class ChatHandler {
       );
       console.log(`✅ Patient symptom data saved for ${session.patient.name}`);
 
+      // Persist severity on patient record
+      try {
+        await this.dbService.updatePatientSeverity(
+          session.patient.id,
+          severity.level
+        );
+        // also reflect it on session.patient for use in downstream services
+        session.patient.severity = severity.level;
+      } catch (sevSaveErr) {
+        console.error("Failed to save patient severity:", sevSaveErr.message);
+      }
+
       // Try to schedule appointment (don't let this fail the whole process)
       try {
         console.log("📅 Attempting to schedule calendar appointment...");
         const appointmentResult =
           await this.calendarService.scheduleAppointment(
             session.patient,
-            symptomData
+            { ...symptomData, severity }
           );
 
         if (appointmentResult.success) {
@@ -373,7 +405,7 @@ class ChatHandler {
         const telegramResult =
           await this.telegramService.sendDoctorNotification(
             session.patient,
-            symptomData,
+            { ...symptomData, severity },
             appointmentTime
           );
 

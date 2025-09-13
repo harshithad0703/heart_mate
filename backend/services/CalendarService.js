@@ -186,6 +186,9 @@ class CalendarService {
     let description = `Cardiology Consultation for ${patientInfo.name}\n\n`;
     description += `📧 Patient Email: ${patientInfo.email}\n`;
     description += `🩺 Primary Symptom: ${symptomData.symptom}\n\n`;
+    if (symptomData?.severity) {
+      description += `🚦 Severity: ${symptomData.severity.decorated} (${symptomData.severity.level})\n\n`;
+    }
     description += `📝 Patient Assessment:\n`;
 
     for (const [category, responses] of Object.entries(symptomData.responses)) {

@@ -10,6 +10,7 @@ A comprehensive AI-powered medical chatbot assistant designed specifically for c
 - **Doctor Notifications**: Automated Telegram notifications to cardiologists with patient details
 - **Appointment Scheduling**: Automatic Google Calendar integration for appointment booking
 - **Secure & Private**: HIPAA-compliant design with encrypted communications
+ - **Severity Analysis (Doctor-only)**: Internal rule-based triage computes case severity and shares it only with doctors via notifications and calendar entries. Patients never see severity in the chat.
 
 ## 🛠 Tech Stack
 
@@ -38,7 +39,8 @@ tricog_chatbot/
 │   │   ├── DatabaseService.js      # Database operations
 │   │   ├── GeminiService.js        # AI/LLM integration
 │   │   ├── TelegramService.js      # Doctor notifications
-│   │   └── CalendarService.js      # Appointment scheduling
+│   │   ├── CalendarService.js      # Appointment scheduling
+│   │   └── SeverityService.js      # Rule-based severity classification (backend-only)
 │   ├── handlers/
 │   │   └── ChatHandler.js          # Main conversation logic
 │   ├── scripts/
@@ -182,6 +184,17 @@ The application will be available at:
 3. **Symptoms**: Patient describes their symptoms
 4. **Assessment**: AI asks relevant follow-up questions based on medical database
 5. **Completion**: AI schedules appointment and notifies doctor
+
+### Severity Analysis (Backend-only)
+
+- After the dataset-driven Q&A completes, the backend runs a rule-based severity classifier:
+  - 🟢 Low: mild symptoms, no red flags
+  - 🟡 Medium!: presence of risk factors (hypertension, diabetes, smoking, etc.)
+  - 🔴 CRITICAL!!!: any red flags or severe chest pain descriptors
+- Severity is stored in the database (`patients.severity`) and is only included in doctor-facing outputs:
+  - Telegram doctor notifications include: `Severity: 🔴 CRITICAL!!!`
+  - Google Calendar event description includes severity line
+- The patient-facing chat never displays severity; it only proceeds to slot selection and confirmation.
 
 ### Doctor Notification
 
