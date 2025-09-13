@@ -267,6 +267,17 @@ class ChatHandler {
     session.responses = {};
     session.state = this.STATES.ASKING_FOLLOW_UP;
 
+    // Persist identified symptom on patient immediately for doctor dashboard visibility
+    try {
+      if (session.patient && session.patient.id) {
+        await this.dbService.updatePatientCaseData(session.patient.id, {
+          symptom: symptomData.name,
+        });
+      }
+    } catch (e) {
+      console.error("Failed to persist identified symptom on patient:", e.message);
+    }
+
     // Generate acknowledgment and first question
     const acknowledgment =
       await this.geminiService.generateSymptomAcknowledgment(

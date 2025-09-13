@@ -541,8 +541,24 @@ class DatabaseService {
       }
 
       const sql = `
-        SELECT id, name, email, symptom, severity, appointment_time, responses, updated_at
-        FROM patients
+        SELECT 
+          p.id,
+          p.name,
+          p.email,
+          COALESCE(p.symptom, (
+            SELECT ps.symptom_name FROM patient_symptoms ps 
+            WHERE ps.patient_id = p.id 
+            ORDER BY ps.created_at DESC LIMIT 1
+          )) AS symptom,
+          p.severity,
+          COALESCE(p.appointment_time, (
+            SELECT a.scheduled_time FROM appointments a 
+            WHERE a.patient_id = p.id 
+            ORDER BY a.created_at DESC LIMIT 1
+          )) AS appointment_time,
+          p.responses,
+          p.updated_at
+        FROM patients p
         ${whereSql}
         ${orderBy}
         LIMIT ? OFFSET ?
