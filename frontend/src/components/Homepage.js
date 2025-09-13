@@ -80,7 +80,7 @@ export default function HomePage() {
       <div className="homepage">
         {/* Welcome text section */}
         <div className="welcome-text">
-          <h2>Welcome to Doctor’s AI Assistant for Cardiology Consults</h2>
+          <h2>Welcome to Doctor’s AI Assistant for Cardiology </h2>
           <p>
             Please click on <strong>Patient</strong> tab if you are a patient
             and on <strong>Doctor</strong> tab if you are a doctor to proceed.
