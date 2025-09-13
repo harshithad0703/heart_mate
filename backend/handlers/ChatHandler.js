@@ -24,6 +24,8 @@ class ChatHandler {
       COLLECTING_EMAIL: "collecting_email",
       COLLECTING_SYMPTOMS: "collecting_symptoms",
       ASKING_FOLLOW_UP: "asking_follow_up",
+      CONFIRMING_SLOT: "confirming_slot",
+      SELECTING_SLOT: "selecting_slot",
       COMPLETED: "completed",
     };
   }
@@ -72,6 +74,12 @@ class ChatHandler {
           break;
         case this.STATES.ASKING_FOLLOW_UP:
           response = await this.handleFollowUpResponse(session, message);
+          break;
+        case this.STATES.CONFIRMING_SLOT:
+          response = await this.handleSlotConfirmation(session, message);
+          break;
+        case this.STATES.SELECTING_SLOT:
+          response = await this.handleSlotSelection(session, message);
           break;
         case this.STATES.COMPLETED:
           response = await this.handleCompletedState(session, message);
@@ -330,9 +338,188 @@ class ChatHandler {
     return `${transition}\n${formattedQuestion}`;
   }
 
+  async handleSlotSelection(session, message) {
+    const text = String(message || "").trim().toLowerCase();
+    if (!Array.isArray(session.offeredSlots) || session.offeredSlots.length === 0) {
+      session.state = this.STATES.COMPLETED;
+      return "I couldn't find any available slots at the moment. Our team will contact you shortly to schedule your appointment.";
+    }
+
+    if (text === "none" || text === "no" || text === "n") {
+      session.state = this.STATES.COMPLETED;
+      return "No problem. Our team will reach out to arrange another time.";
+    }
+
+    const choice = parseInt(text, 10);
+    if (isNaN(choice) || choice < 1 || choice > session.offeredSlots.length) {
+      const options = session.offeredSlots.map((iso, idx) => `${idx + 1}`).join(", ");
+      return `Please reply with one of the option numbers: ${options}, or type "none".`;
+    }
+
+    const selectedIso = session.offeredSlots[choice - 1];
+    const selectedDate = new Date(selectedIso);
+    const symptomData = {
+      symptom: session.currentSymptom?.name,
+      responses: session.responses,
+    };
+    const severity = session.pendingSeverity || { level: "LOW", decorated: "🟢 Low" };
+
+    try {
+      const result = await this.calendarService.scheduleAppointmentAt(
+        session.patient,
+        { ...symptomData, severity },
+        selectedDate
+      );
+      if (result.success) {
+        const appointmentTime = new Date(result.appointmentTime);
+        await this.dbService.saveAppointment(
+          session.patient.id,
+          result.eventId,
+          result.appointmentTime
+        );
+        try {
+          await this.dbService.updatePatientCaseData(session.patient.id, {
+            appointment_time: result.appointmentTime,
+          });
+        } catch (_) {}
+
+        // Notify doctor now
+        try {
+          await this.telegramService.sendDoctorNotification(
+            session.patient,
+            { ...symptomData, severity },
+            appointmentTime
+          );
+        } catch (_) {}
+
+        session.state = this.STATES.COMPLETED;
+        session.offeredSlots = [];
+        session.pendingSeverity = undefined;
+        return `Your appointment is scheduled for ${appointmentTime.toLocaleString()}. Our team will share the details shortly.`;
+      }
+      // if failed, surface a message
+      return `I couldn't schedule that slot (${selectedDate.toLocaleString()}). Please choose another option or type "none".`;
+    } catch (e) {
+      return `There was an issue scheduling your selected slot. Please pick another option or type "none".`;
+    }
+  }
+
+  async handleSlotConfirmation(session, message) {
+    const text = String(message || "").trim().toLowerCase();
+    if (!session.proposedSlot) {
+      // Fallback to listing slots if proposal missing
+      try {
+        const severity = session.pendingSeverity || { level: "LOW", decorated: "🟢 Low" };
+        const slots = await this.calendarService.getAvailableSlotsForSeverity(severity.level, {
+          durationMinutes: 30,
+          stepMinutes: 15,
+          limit: 8,
+        });
+        if (Array.isArray(slots) && slots.length > 0) {
+          session.state = this.STATES.SELECTING_SLOT;
+          session.offeredSlots = slots.map((d) => new Date(d).toISOString());
+          const human = (iso) => new Date(iso).toLocaleString();
+          const list = session.offeredSlots
+            .map((iso, idx) => `${idx + 1}. ${human(iso)}`)
+            .join("\n");
+          return [
+            `Here are some available times:`,
+            list,
+            `\nPlease reply with the number of your preferred slot, or type "none".`,
+          ].join("\n");
+        }
+      } catch (_) {}
+      session.state = this.STATES.COMPLETED;
+      return "I couldn't find any available slots at the moment. Our team will contact you shortly to schedule your appointment.";
+    }
+
+    const yesValues = ["yes", "y", "ok", "okay", "confirm", "book", "schedule"];
+    const noValues = ["no", "n", "later", "change", "different"];
+
+    if (yesValues.includes(text)) {
+      try {
+        const selectedDate = new Date(session.proposedSlot);
+        const severity = session.pendingSeverity || { level: "LOW", decorated: "🟢 Low" };
+        const symptomData = {
+          symptom: session.currentSymptom?.name,
+          responses: session.responses,
+          severity,
+        };
+        const result = await this.calendarService.scheduleAppointmentAt(
+          session.patient,
+          symptomData,
+          selectedDate
+        );
+        if (result.success) {
+          const appointmentTime = new Date(result.appointmentTime);
+          await this.dbService.saveAppointment(
+            session.patient.id,
+            result.eventId,
+            result.appointmentTime
+          );
+          try {
+            await this.dbService.updatePatientCaseData(session.patient.id, {
+              appointment_time: result.appointmentTime,
+            });
+          } catch (_) {}
+
+          // Notify doctor
+          try {
+            await this.telegramService.sendDoctorNotification(
+              session.patient,
+              symptomData,
+              appointmentTime
+            );
+          } catch (_) {}
+
+          session.state = this.STATES.COMPLETED;
+          session.offeredSlots = [];
+          session.pendingSeverity = undefined;
+          session.proposedSlot = undefined;
+          return `Your appointment is scheduled for ${appointmentTime.toLocaleString()}. Our team will share the details shortly.`;
+        }
+        return `I couldn't schedule that time. Would you like to pick another slot? Reply "no" to see options.`;
+      } catch (e) {
+        return `There was an issue scheduling that time. Reply "no" to see other options.`;
+      }
+    }
+
+    if (noValues.includes(text)) {
+      // Show multiple options
+      try {
+        const severity = session.pendingSeverity || { level: "LOW", decorated: "🟢 Low" };
+        const slots = await this.calendarService.getAvailableSlotsForSeverity(severity.level, {
+          durationMinutes: 30,
+          stepMinutes: 15,
+          limit: 8,
+        });
+        if (Array.isArray(slots) && slots.length > 0) {
+          session.state = this.STATES.SELECTING_SLOT;
+          session.offeredSlots = slots.map((d) => new Date(d).toISOString());
+          const human = (iso) => new Date(iso).toLocaleString();
+          const list = session.offeredSlots
+            .map((iso, idx) => `${idx + 1}. ${human(iso)}`)
+            .join("\n");
+          session.proposedSlot = undefined;
+          return [
+            `No problem. Here are some other available times:`,
+            list,
+            `\nPlease reply with the number of your preferred slot, or type "none".`,
+          ].join("\n");
+        }
+      } catch (e) {
+        console.error("Failed to list slots after decline:", e.message);
+      }
+      session.state = this.STATES.COMPLETED;
+      session.proposedSlot = undefined;
+      return "I couldn't find alternative slots right now. Our team will contact you to arrange a time.";
+    }
+
+    return 'Please reply with "yes" to confirm this time, or "no" to see other options.';
+  }
+
   async completeConsultation(session) {
-    // Always update session state first
-    session.state = this.STATES.COMPLETED;
+    // We will move to SELECTING_SLOT if slots are available, else COMPLETE
 
     let appointmentScheduled = false;
     let telegramSent = false;
@@ -383,14 +570,59 @@ class ChatHandler {
         console.error("Failed to save patient severity:", sevSaveErr.message);
       }
 
-      // Try to schedule appointment (don't let this fail the whole process)
+      // Severity-based scheduling flow
       try {
-        console.log("📅 Attempting to schedule calendar appointment...");
-        const appointmentResult =
-          await this.calendarService.scheduleAppointment(
-            session.patient,
-            { ...symptomData, severity }
-          );
+        // For CRITICAL and MEDIUM, propose the next available slot and ask for confirmation
+        if (severity.level === "CRITICAL" || severity.level === "MEDIUM") {
+          const slots = await this.calendarService.getAvailableSlotsForSeverity(severity.level, {
+            durationMinutes: 30,
+            stepMinutes: 15,
+            limit: 1,
+          });
+          if (Array.isArray(slots) && slots.length > 0) {
+            const proposed = new Date(slots[0]).toISOString();
+            session.pendingSeverity = severity;
+            session.proposedSlot = proposed;
+            session.state = this.STATES.CONFIRMING_SLOT;
+            const when = new Date(proposed).toLocaleString();
+            return `Based on urgency, the next available appointment is ${when}. Shall I book this for you now? (yes/no)`;
+          }
+        }
+
+        // For LOW or if proposal not found, offer multiple options for selection
+        const slots = await this.calendarService.getAvailableSlotsForSeverity(severity.level, {
+          durationMinutes: 30,
+          stepMinutes: 15,
+          limit: 8,
+        });
+        if (Array.isArray(slots) && slots.length > 0) {
+          // Save offered slots in session and prompt user to pick
+          session.state = this.STATES.SELECTING_SLOT;
+          session.offeredSlots = slots.map((d) => new Date(d).toISOString());
+          session.pendingSeverity = severity;
+
+          const human = (iso) => new Date(iso).toLocaleString();
+          const list = session.offeredSlots
+            .map((iso, idx) => `${idx + 1}. ${human(iso)}`)
+            .join("\n");
+
+          return [
+            `I can offer these appointment times today:`,
+            list,
+            `\nPlease reply with the number of your preferred slot (e.g., 1). If none of these work, type "none".`,
+          ].join("\n");
+        }
+      } catch (slotErr) {
+        console.error("Failed to list available slots:", slotErr.message);
+      }
+
+      // Fallback: directly schedule next available (legacy behavior)
+      try {
+        console.log("📅 No selectable slots found; scheduling next available...");
+        const appointmentResult = await this.calendarService.scheduleAppointment(
+          session.patient,
+          { ...symptomData, severity }
+        );
 
         if (appointmentResult.success) {
           appointmentTime = new Date(appointmentResult.appointmentTime);
@@ -407,48 +639,31 @@ class ChatHandler {
             console.error("Failed to persist appointment time on patient:", e.message);
           }
           appointmentScheduled = true;
-          console.log(
-            `✅ Calendar appointment scheduled for ${appointmentTime.toLocaleString()}`
-          );
-        } else {
-          console.log(
-            `⚠️ Calendar appointment failed: ${appointmentResult.error}`
-          );
+          session.state = this.STATES.COMPLETED;
+          console.log(`✅ Calendar appointment scheduled for ${appointmentTime.toLocaleString()}`);
         }
       } catch (calendarError) {
-        console.error(
-          "⚠️ Calendar service failed (continuing anyway):",
-          calendarError.message
-        );
-        // Don't throw - just continue
+        console.error("⚠️ Calendar service failed (continuing anyway):", calendarError.message);
       }
 
-      // Try to send Telegram notification (don't let this fail the whole process)
-      try {
-        console.log("📱 Attempting to send Telegram notification...");
-        const telegramResult =
-          await this.telegramService.sendDoctorNotification(
+      // Only send Telegram if we already scheduled (fallback path)
+      if (appointmentScheduled) {
+        try {
+          console.log("📱 Attempting to send Telegram notification...");
+          const telegramResult = await this.telegramService.sendDoctorNotification(
             session.patient,
             { ...symptomData, severity },
             appointmentTime
           );
-
-        if (telegramResult.success) {
-          telegramSent = true;
-          console.log(
-            `✅ Telegram notification sent (message ID: ${telegramResult.messageId})`
-          );
-        } else {
-          console.log(
-            `⚠️ Telegram notification failed: ${telegramResult.error}`
-          );
+          if (telegramResult.success) {
+            telegramSent = true;
+            console.log(`✅ Telegram notification sent (message ID: ${telegramResult.messageId})`);
+          } else {
+            console.log(`⚠️ Telegram notification failed: ${telegramResult.error}`);
+          }
+        } catch (telegramError) {
+          console.error("⚠️ Telegram service failed (continuing anyway):", telegramError.message);
         }
-      } catch (telegramError) {
-        console.error(
-          "⚠️ Telegram service failed (continuing anyway):",
-          telegramError.message
-        );
-        // Don't throw - just continue
       }
 
       // Generate completion message (use fallback if this fails too)
@@ -473,7 +688,10 @@ class ChatHandler {
         finalMessage += `\n📋 The appointment has been created in our system.`;
         finalMessage += `\n📞 Our staff will contact you with meeting details and any additional instructions.`;
       } else {
-        finalMessage += `\n\n📞 Our team will contact you shortly to schedule your appointment.`;
+        // If we transitioned to slot selection, we already returned a prompt earlier
+        if (session.state !== this.STATES.SELECTING_SLOT) {
+          finalMessage += `\n\n📞 Our team will contact you shortly to schedule your appointment.`;
+        }
       }
 
       if (telegramSent) {
@@ -487,6 +705,11 @@ class ChatHandler {
           appointmentScheduled ? "Yes" : "No"
         }, Telegram: ${telegramSent ? "Yes" : "No"})`
       );
+      // If we offered slots, the earlier return already responded. Otherwise, send final summary
+      if (session.state === this.STATES.SELECTING_SLOT) {
+        return null;
+      }
+      session.state = this.STATES.COMPLETED;
       return finalMessage;
     } catch (error) {
       // Ultimate fallback - this should rarely happen now

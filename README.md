@@ -130,7 +130,7 @@ npm run dev
 
 The application will be available at:
 
-- **Frontend**: http://localhost:6979
+- **Frontend**: http://localhost:3007
 - **Backend API**: http://localhost:8024
 
 ## 🔑 API Keys Setup Guide
@@ -167,7 +167,8 @@ The application will be available at:
 3. Enable the Google Calendar API
 4. Create service account credentials
 5. Download the JSON credentials file
-6. Convert the entire JSON to a string and add to `.env` as `GOOGLE_CALENDAR_CREDENTIALS`
+6. Share the doctor's Google Calendar with the service account email (`client_email` in the JSON) with permission: "Make changes to events"
+7. Convert the entire JSON to a single-line string and add to `.env` as `GOOGLE_CALENDAR_CREDENTIALS`
 
 **Alternative OAuth2 Setup:**
 
@@ -207,7 +208,7 @@ When a patient completes their assessment, the doctor receives:
 
 ### Doctor Dashboard
 
-- Navigate to `http://localhost:6979/doctor`
+- Navigate to `http://localhost:3007/doctor`
 - Features:
   - Search by name or ID (real-time)
   - Filter by severity (Low / Medium / Critical)
@@ -249,8 +250,12 @@ The system uses a comprehensive symptom database with categories:
 ```bash
 # Root directory
 npm run dev          # Start both frontend and backend
+npm run dev-fast     # Start both with faster frontend flags (no browser auto-open)
 npm run install-all  # Install all dependencies
 npm run setup        # Setup database
+npm run debug-chat   # Print environment/debug info for integrations
+npm run test-gemini  # Quick Gemini API connectivity test
+npm run test-setup   # Verify environment and setup
 
 # Backend directory
 npm start            # Start production server
@@ -272,6 +277,7 @@ npm run build        # Build for production
 | `GOOGLE_CALENDAR_CREDENTIALS` | Google service account JSON         | Yes      |
 | `DOCTOR_EMAIL`                | Doctor's email for calendar invites | Yes      |
 | `PORT`                        | Backend server port (default: 8024) | No       |
+| `NODE_ENV`                    | Node environment (development/prod) | No       |
 
 ## 🐛 Troubleshooting
 

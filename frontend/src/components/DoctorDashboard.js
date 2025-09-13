@@ -78,7 +78,7 @@ export default function DoctorDashboard() {
       <div className="dashboard-container">
         <header className="dashboard-header flex items-center justify-between">
           <div>
-            <h1 className="dashboard-title">Doctor Dashboard</h1>
+            {/* <h1 className="dashboard-title">Doctor Dashboard</h1> */}
             {doctor && (
               <div className="dashboard-subtitle">
                 {doctor.name || doctor.email}
@@ -91,7 +91,7 @@ export default function DoctorDashboard() {
                 localStorage.removeItem("tricog_doctor");
                 window.location.href = "/?tab=doctor";
               }}
-              className="text-red-600 hover:text-red-800 text-sm"
+              className="text-red-800 hover:text-red-800 text-sm font-bold"
             >
               Logout
             </button>
@@ -132,7 +132,7 @@ export default function DoctorDashboard() {
               <div className="flex items-center justify-end space-x-2">
                 <button
                   onClick={() => fetchPatients()}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+                  className="bg-[#01294E] text-white px-4 py-2 rounded hover:bg-indigo-700"
                 >
                   Refresh
                 </button>
