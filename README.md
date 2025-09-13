@@ -10,6 +10,8 @@ A comprehensive AI-powered medical chatbot assistant designed specifically for c
 - **Doctor Notifications**: Automated Telegram notifications to cardiologists with patient details
 - **Appointment Scheduling**: Automatic Google Calendar integration for appointment booking
 - **Secure & Private**: HIPAA-compliant design with encrypted communications
+ - **Severity Analysis (Doctor-only)**: Internal rule-based triage computes case severity and shares it only with doctors via notifications and calendar entries. Patients never see severity in the chat.
+ - **Doctor Dashboard**: Web UI to search, filter, and sort patient cases with severity indicators.
 
 ## 🛠 Tech Stack
 
@@ -38,7 +40,8 @@ tricog_chatbot/
 │   │   ├── DatabaseService.js      # Database operations
 │   │   ├── GeminiService.js        # AI/LLM integration
 │   │   ├── TelegramService.js      # Doctor notifications
-│   │   └── CalendarService.js      # Appointment scheduling
+│   │   ├── CalendarService.js      # Appointment scheduling
+│   │   └── SeverityService.js      # Rule-based severity classification (backend-only)
 │   ├── handlers/
 │   │   └── ChatHandler.js          # Main conversation logic
 │   ├── scripts/
@@ -127,7 +130,7 @@ npm run dev
 
 The application will be available at:
 
-- **Frontend**: http://localhost:6979
+- **Frontend**: http://localhost:3007
 - **Backend API**: http://localhost:8024
 
 ## 🔑 API Keys Setup Guide
@@ -164,7 +167,8 @@ The application will be available at:
 3. Enable the Google Calendar API
 4. Create service account credentials
 5. Download the JSON credentials file
-6. Convert the entire JSON to a string and add to `.env` as `GOOGLE_CALENDAR_CREDENTIALS`
+6. Share the doctor's Google Calendar with the service account email (`client_email` in the JSON) with permission: "Make changes to events"
+7. Convert the entire JSON to a single-line string and add to `.env` as `GOOGLE_CALENDAR_CREDENTIALS`
 
 **Alternative OAuth2 Setup:**
 
@@ -183,6 +187,17 @@ The application will be available at:
 4. **Assessment**: AI asks relevant follow-up questions based on medical database
 5. **Completion**: AI schedules appointment and notifies doctor
 
+### Severity Analysis (Backend-only)
+
+- After the dataset-driven Q&A completes, the backend runs a rule-based severity classifier:
+  - 🟢 Low: mild symptoms, no red flags
+  - 🟡 Medium!: presence of risk factors (hypertension, diabetes, smoking, etc.)
+  - 🔴 CRITICAL!!!: any red flags or severe chest pain descriptors
+- Severity is stored in the database (`patients.severity`) and is only included in doctor-facing outputs:
+  - Telegram doctor notifications include: `Severity: 🔴 CRITICAL!!!`
+  - Google Calendar event description includes severity line
+- The patient-facing chat never displays severity; it only proceeds to slot selection and confirmation.
+
 ### Doctor Notification
 
 When a patient completes their assessment, the doctor receives:
@@ -190,6 +205,16 @@ When a patient completes their assessment, the doctor receives:
 - Telegram message with patient details
 - Google Calendar invitation with comprehensive patient information
 - All responses organized by medical categories
+
+### Doctor Dashboard
+
+- Navigate to `http://localhost:3007/doctor`
+- Features:
+  - Search by name or ID (real-time)
+  - Filter by severity (Low / Medium / Critical)
+  - Sort by severity priority (Critical → Medium → Low)
+  - Pagination (20 per page)
+
 
 ## 🏥 Medical Data Structure
 
@@ -225,8 +250,12 @@ The system uses a comprehensive symptom database with categories:
 ```bash
 # Root directory
 npm run dev          # Start both frontend and backend
+npm run dev-fast     # Start both with faster frontend flags (no browser auto-open)
 npm run install-all  # Install all dependencies
 npm run setup        # Setup database
+npm run debug-chat   # Print environment/debug info for integrations
+npm run test-gemini  # Quick Gemini API connectivity test
+npm run test-setup   # Verify environment and setup
 
 # Backend directory
 npm start            # Start production server
@@ -248,6 +277,7 @@ npm run build        # Build for production
 | `GOOGLE_CALENDAR_CREDENTIALS` | Google service account JSON         | Yes      |
 | `DOCTOR_EMAIL`                | Doctor's email for calendar invites | Yes      |
 | `PORT`                        | Backend server port (default: 8024) | No       |
+| `NODE_ENV`                    | Node environment (development/prod) | No       |
 
 ## 🐛 Troubleshooting
 

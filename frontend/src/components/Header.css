@@ -1,9 +1,9 @@
 .app-header {
-  background: rgba(255, 255, 255, 0.1);
+  background: #01294E;
   backdrop-filter: blur(20px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   color: white;
-  padding: 15px 0;
+  padding: 20px 0;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -24,10 +24,16 @@
   gap: 12px;
 }
 
+.header-logo img {
+  width: 180px;
+  height: auto;
+  transition: all 0.3s ease;
+}
+
 .logo-icon {
   width: 48px;
   height: 48px;
-  background: rgba(255, 255, 255, 0.15);
+  background: #01294E;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -35,19 +41,13 @@
   color: white;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
 }
 
-.logo-text h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin-bottom: 2px;
-  color: white;
-}
-
-.logo-text p {
-  font-size: 0.85rem;
-  opacity: 0.8;
-  font-weight: 300;
+.logo-icon svg {
+  width: 70%;
+  height: auto;
+  max-width: 28px;
 }
 
 .header-info {
@@ -56,32 +56,35 @@
   gap: 20px;
 }
 
+/* 🔹 Make text bigger on desktop */
 .security-badge {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.1);
+  background: #01294E;
   padding: 8px 12px;
   border-radius: 20px;
-  font-size: 0.8rem;
-  font-weight: 500;
+  font-size: 1rem; /* bigger than before */
+  font-weight: 600;
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid #01294E;
+  transition: all 0.3s ease;
 }
 
 .security-badge svg {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
-/* Mobile responsive */
+/* Tablet adjustments */
 @media (max-width: 768px) {
   .header-content {
     padding: 0 15px;
   }
 
-  .header-logo {
-    gap: 10px;
+  .header-logo img {
+    width: 140px; /* smaller logo */
   }
 
   .logo-icon {
@@ -90,20 +93,22 @@
     border-radius: 10px;
   }
 
-  .logo-text h1 {
-    font-size: 1.3rem;
-  }
-
-  .logo-text p {
-    font-size: 0.8rem;
+  .logo-icon svg {
+    max-width: 22px;
   }
 
   .security-badge {
-    font-size: 0.75rem;
+    font-size: 0.85rem;
     padding: 6px 10px;
+  }
+
+  .security-badge svg {
+    width: 14px;
+    height: 14px;
   }
 }
 
+/* 🔹 Mobile adjustments */
 @media (max-width: 480px) {
   .app-header {
     padding: 12px 0;
@@ -111,50 +116,46 @@
 
   .header-content {
     padding: 0 12px;
-    flex-direction: column;
-    gap: 10px;
-    text-align: center;
+    flex-direction: row; /* keep items in one line */
+    justify-content: space-between;
+    text-align: left;
+  }
+
+  .header-logo img {
+    width: 120px; /* smaller logo on mobile */
   }
 
   .logo-icon {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 8px;
   }
 
-  .logo-text h1 {
-    font-size: 1.2rem;
-  }
-
-  .logo-text p {
-    font-size: 0.75rem;
-  }
-
-  .header-info {
-    justify-content: center;
+  .logo-icon svg {
+    max-width: 18px;
   }
 
   .security-badge {
-    font-size: 0.7rem;
+    font-size: 0.85rem;
     padding: 5px 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .security-badge svg {
+    width: 12px;
+    height: 12px;
   }
 }
 
 /* Hover effects */
-.logo-icon {
-  transition: all 0.3s ease;
-}
-
 .logo-icon:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: #01294E;
   transform: translateY(-1px);
 }
 
-.security-badge {
-  transition: all 0.3s ease;
-}
-
 .security-badge:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: #01294E;
   transform: translateY(-1px);
 }

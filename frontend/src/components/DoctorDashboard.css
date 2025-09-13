@@ -1,0 +1,123 @@
+/* doctor-dashboard.css */
+
+/* Apply smooth scroll + nicer font */
+body {
+  font-family: 'Inter', sans-serif;
+  scroll-behavior: smooth;
+}
+
+/* Dashboard wrapper */
+.dashboard-container {
+  background-color: #f9fafb; /* light gray */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header (Doctor Dashboard section) */
+.dashboard-header {
+  background: white;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  padding: 1rem 2rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.dashboard-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1f2937; /* gray-800 */
+}
+
+.dashboard-subtitle {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #032871; /* gray-500 */
+}
+
+/* Top controls (filters, refresh) */
+.dashboard-controls {
+  background: white;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  display: grid;
+  gap: 0.75rem;
+}
+
+.dashboard-controls input,
+.dashboard-controls select {
+  border-radius: 0.5rem;
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 0.75rem;
+  outline: none;
+  transition: 0.2s;
+}
+
+.dashboard-controls input:focus,
+.dashboard-controls select:focus {
+  border-color: #01294E; /* indigo */
+  box-shadow: 0 0 0 2px rgba(79,70,229,0.2);
+}
+
+/* Patient table */
+.dashboard-table {
+  background: white;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+}
+
+.dashboard-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.dashboard-table th {
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #6b7280;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+}
+
+.dashboard-table td {
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  color: #374151; /* gray-700 */
+}
+
+.dashboard-table tr:hover {
+  background: #f3f4f6;
+}
+
+/* Pagination */
+.dashboard-pagination {
+  background: #f9fafb;
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+  color: #6b7280;
+  border-top: 1px solid #e5e7eb;
+}
+
+.dashboard-pagination button {
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  transition: 0.2s;
+}
+
+.dashboard-pagination button:hover:not(:disabled) {
+  background: #e0e7ff; /* indigo-100 */
+  border-color: #01294E;
+}
+
+.dashboard-pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

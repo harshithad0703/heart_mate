@@ -1,6 +1,7 @@
 const sqlite3 = require("sqlite3").verbose();
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 
 class DatabaseService {
   constructor() {
@@ -46,6 +47,10 @@ class DatabaseService {
           name TEXT,
           email TEXT,
           phone TEXT,
+          severity TEXT,
+          symptom TEXT,
+          responses TEXT,
+          appointment_time DATETIME,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`,
@@ -82,6 +87,17 @@ class DatabaseService {
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (patient_id) REFERENCES patients (id)
         )`,
+
+        // Doctors table
+        `CREATE TABLE IF NOT EXISTS doctors (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          email TEXT UNIQUE NOT NULL,
+          name TEXT,
+          password_hash TEXT NOT NULL,
+          password_salt TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )`,
       ];
 
       let completed = 0;
@@ -94,9 +110,79 @@ class DatabaseService {
           }
           completed++;
           if (completed === queries.length) {
-            console.log("All tables created successfully");
-            resolve();
+            // After base tables exist, ensure migrations like missing columns
+            this.ensurePatientsSeverityColumn()
+              .then(() => this.ensurePatientsCaseColumns())
+              .then(() => {
+                console.log("All tables created successfully");
+                resolve();
+              })
+              .catch((migrationErr) => {
+                console.error("Error ensuring severity column:", migrationErr);
+                // Continue resolving even if migration failed to avoid blocking startup
+                resolve();
+              });
           }
+        });
+      });
+    });
+  }
+
+  async ensurePatientsSeverityColumn() {
+    return new Promise((resolve, reject) => {
+      this.db.all("PRAGMA table_info(patients)", (err, rows) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        const hasSeverity = rows.some((col) => col.name === "severity");
+        if (hasSeverity) {
+          resolve();
+          return;
+        }
+        this.db.run(
+          "ALTER TABLE patients ADD COLUMN severity TEXT",
+          (alterErr) => {
+            if (alterErr) {
+              reject(alterErr);
+            } else {
+              console.log("Added severity column to patients table");
+              resolve();
+            }
+          }
+        );
+      });
+    });
+  }
+
+  async ensurePatientsCaseColumns() {
+    return new Promise((resolve, reject) => {
+      this.db.all("PRAGMA table_info(patients)", (err, rows) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        const hasSymptom = rows.some((col) => col.name === "symptom");
+        const hasResponses = rows.some((col) => col.name === "responses");
+        const hasApptTime = rows.some((col) => col.name === "appointment_time");
+
+        const migrations = [];
+        if (!hasSymptom) migrations.push(["ALTER TABLE patients ADD COLUMN symptom TEXT"]);
+        if (!hasResponses) migrations.push(["ALTER TABLE patients ADD COLUMN responses TEXT"]);
+        if (!hasApptTime) migrations.push(["ALTER TABLE patients ADD COLUMN appointment_time DATETIME"]);
+
+        if (migrations.length === 0) {
+          resolve();
+          return;
+        }
+
+        let done = 0;
+        migrations.forEach(([sql]) => {
+          this.db.run(sql, (alterErr) => {
+            if (alterErr) console.error("Case column migration error:", alterErr.message);
+            done++;
+            if (done === migrations.length) resolve();
+          });
         });
       });
     });
@@ -235,6 +321,59 @@ class DatabaseService {
     });
   }
 
+  async createOrUpdatePatientByEmail(email, patientData = {}) {
+    return new Promise((resolve, reject) => {
+      this.db.get(
+        "SELECT * FROM patients WHERE email = ?",
+        [email],
+        (err, row) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+
+          if (row) {
+            const updateQuery = `
+            UPDATE patients 
+            SET name = COALESCE(?, name), 
+                phone = COALESCE(?, phone),
+                socket_id = COALESCE(?, socket_id),
+                updated_at = CURRENT_TIMESTAMP
+            WHERE email = ?
+          `;
+            this.db.run(
+              updateQuery,
+              [patientData.name, patientData.phone, patientData.socketId || null, email],
+              function (err) {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve({ id: row.id, ...row, ...patientData });
+                }
+              }
+            );
+          } else {
+            const insertQuery = `
+            INSERT INTO patients (socket_id, name, email, phone) 
+            VALUES (?, ?, ?, ?)
+          `;
+            this.db.run(
+              insertQuery,
+              [patientData.socketId || null, patientData.name, email, patientData.phone],
+              function (err) {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve({ id: this.lastID, name: patientData.name, email, phone: patientData.phone });
+                }
+              }
+            );
+          }
+        }
+      );
+    });
+  }
+
   async getPatientBySocketId(socketId) {
     return new Promise((resolve, reject) => {
       this.db.get(
@@ -248,6 +387,23 @@ class DatabaseService {
           }
         }
       );
+    });
+  }
+
+  async updatePatientSeverity(patientId, severity) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        UPDATE patients
+        SET severity = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `;
+      this.db.run(query, [severity, patientId], function (err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({ changes: this.changes });
+        }
+      });
     });
   }
 
@@ -327,6 +483,173 @@ class DatabaseService {
         }
       );
     });
+  }
+
+  async updatePatientCaseData(patientId, { symptom, responses, severity, appointment_time }) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        UPDATE patients
+        SET symptom = COALESCE(?, symptom),
+            responses = COALESCE(?, responses),
+            severity = COALESCE(?, severity),
+            appointment_time = COALESCE(?, appointment_time),
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `;
+      this.db.run(
+        query,
+        [symptom || null, responses ? JSON.stringify(responses) : null, severity || null, appointment_time || null, patientId],
+        function (err) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ changes: this.changes });
+          }
+        }
+      );
+    });
+  }
+
+  async listPatients({ search, severity, sort, limit = 100, offset = 0 }) {
+    return new Promise((resolve, reject) => {
+      const whereClauses = [];
+      const params = [];
+
+      if (search) {
+        const trimmed = String(search).trim();
+        const idNum = Number(trimmed);
+        if (!isNaN(idNum)) {
+          whereClauses.push("(id = ? OR name LIKE ?)");
+          params.push(idNum, `%${trimmed}%`);
+        } else {
+          whereClauses.push("(name LIKE ?)");
+          params.push(`%${trimmed}%`);
+        }
+      }
+
+      if (severity) {
+        const sev = String(severity).toUpperCase();
+        whereClauses.push("(severity = ?)");
+        params.push(sev);
+      }
+
+      const whereSql = whereClauses.length ? `WHERE ${whereClauses.join(" AND ")}` : "";
+
+      let orderBy = "ORDER BY updated_at DESC";
+      if (sort === "severity") {
+        orderBy = `ORDER BY CASE severity WHEN 'CRITICAL' THEN 1 WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 3 ELSE 4 END, updated_at DESC`;
+      }
+
+      const sql = `
+        SELECT 
+          p.id,
+          p.name,
+          p.email,
+          COALESCE(p.symptom, (
+            SELECT ps.symptom_name FROM patient_symptoms ps 
+            WHERE ps.patient_id = p.id 
+            ORDER BY ps.created_at DESC LIMIT 1
+          )) AS symptom,
+          p.severity,
+          COALESCE(p.appointment_time, (
+            SELECT a.scheduled_time FROM appointments a 
+            WHERE a.patient_id = p.id 
+            ORDER BY a.created_at DESC LIMIT 1
+          )) AS appointment_time,
+          p.responses,
+          p.updated_at
+        FROM patients p
+        ${whereSql}
+        ${orderBy}
+        LIMIT ? OFFSET ?
+      `;
+      params.push(Number(limit), Number(offset));
+
+      this.db.all(sql, params, (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          const mapped = rows.map((row) => ({
+            id: row.id,
+            name: row.name,
+            email: row.email,
+            symptom: row.symptom,
+            severity: row.severity,
+            appointment_time: row.appointment_time,
+            appointment: row.appointment_time,
+            responses: row.responses ? this._safeJsonParse(row.responses) : null,
+            updated_at: row.updated_at,
+          }));
+          resolve(mapped);
+        }
+      });
+    });
+  }
+
+  _safeJsonParse(jsonString) {
+    try {
+      return JSON.parse(jsonString);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Doctor auth methods
+  async getDoctorByEmail(email) {
+    return new Promise((resolve, reject) => {
+      this.db.get(
+        "SELECT * FROM doctors WHERE email = ?",
+        [email],
+        (err, row) => {
+          if (err) return reject(err);
+          resolve(row || null);
+        }
+      );
+    });
+  }
+
+  async createDoctor({ email, name, password }) {
+    const salt = crypto.randomBytes(16).toString("hex");
+    const hash = await this._hashPassword(password, salt);
+    return new Promise((resolve, reject) => {
+      const query = `
+        INSERT INTO doctors (email, name, password_hash, password_salt)
+        VALUES (?, ?, ?, ?)
+      `;
+      this.db.run(query, [email, name || null, hash, salt], function (err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({ id: this.lastID, email, name });
+        }
+      });
+    });
+  }
+
+  async validateDoctorCredentials(email, password) {
+    const doctor = await this.getDoctorByEmail(email);
+    if (!doctor) return null;
+    const ok = await this._verifyPassword(password, doctor.password_salt, doctor.password_hash);
+    if (!ok) return null;
+    return { id: doctor.id, email: doctor.email, name: doctor.name };
+  }
+
+  _hashPassword(password, salt) {
+    return new Promise((resolve, reject) => {
+      crypto.pbkdf2(password, salt, 120000, 32, "sha256", (err, derivedKey) => {
+        if (err) return reject(err);
+        resolve(derivedKey.toString("hex"));
+      });
+    });
+  }
+
+  async _verifyPassword(password, salt, expectedHash) {
+    const hash = await this._hashPassword(password, salt);
+    // constant-time compare
+    const a = Buffer.from(hash, "hex");
+    const b = Buffer.from(expectedHash, "hex");
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
   }
 
   close() {

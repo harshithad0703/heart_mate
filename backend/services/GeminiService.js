@@ -70,18 +70,17 @@ class GeminiService {
 
   async generateFollowUpTransition(currentQuestionIndex, totalQuestions) {
     const prompt = `
-    You are a medical assistant collecting patient information. 
+    You are a medical assistant collecting patient information.
     
-    Generate a brief transitional message indicating you're moving to the next question.
-    Current progress: question ${currentQuestionIndex} of ${totalQuestions}
+    Generate a BRIEF transitional message to move to the next question.
     
-    The message should:
-    - Be encouraging and brief
-    - Do not use words such as "great", "amazing", "wonderful", etc.
-    - Maybe mention progress if appropriate
-    - Keep it to 1 sentence
+    Strict requirements:
+    - Do NOT mention progress or how many questions remain.
+    - Keep it to ONE short sentence (max 10 words).
+    - Be neutral-professional (no "great", "amazing", "wonderful", etc.).
+    - Examples of tone: "Thank you.", "Got it, thank you.", "Understood.", "Thanks for clarifying., "Moving on."
     
-    Examples: "Thank you for that information.", "I understand.", "That's helpful to know."
+    Return only the sentence.
     `;
 
     return await this.generateResponse(prompt);
@@ -128,14 +127,16 @@ class GeminiService {
 
   async generateQuestionTransition(questionText) {
     const prompt = `
-    You are asking a medical question to a patient. Make the question sound more conversational and empathetic.
+    You are asking a medical question to a patient. Make the question sound conversational and empathetic.
     
     Original question: "${questionText}"
     
     Rephrase it to be:
-    - More conversational and warm
-    - Keep the same medical content
-    - Make it feel like a caring doctor is asking
+    - Warm but professional
+    - Brief (one sentence, under 20 words)
+    - Preserve the medical meaning
+    
+    Do NOT add mentions of progress or number of questions left.
     
     Return only the rephrased question.
     `;

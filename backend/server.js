@@ -61,6 +61,66 @@ app.get("/api/symptoms", async (req, res) => {
   }
 });
 
+// Create or update patient by email
+app.post("/api/patient", async (req, res) => {
+  try {
+    const { email, fullName, password, phone } = req.body || {};
+    if (!email) {
+      return res.status(400).json({ success: false, error: "Email is required" });
+    }
+
+    const patient = await dbService.createOrUpdatePatientByEmail(email, {
+      name: fullName,
+      phone,
+    });
+
+    res.json({ success: true, patient });
+  } catch (error) {
+    console.error("Error creating/updating patient:", error);
+    res.status(500).json({ success: false, error: "Failed to create/update patient" });
+  }
+});
+
+// Doctor auth
+app.post("/api/doctor", async (req, res) => {
+  try {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res.status(400).json({ success: false, error: "Email and password are required" });
+    }
+    const doctor = await dbService.validateDoctorCredentials(email, password);
+    if (!doctor) {
+      return res.status(401).json({ success: false, error: "Invalid credentials" });
+    }
+    res.json({ success: true, doctor });
+  } catch (error) {
+    console.error("Error in doctor endpoint:", error);
+    res.status(500).json({ success: false, error: "Doctor auth failed" });
+  }
+});
+
+// (Removed demo registration route)
+
+// Doctor: list patients with filters/sorting
+app.get("/api/doctor/patients", async (req, res) => {
+  try {
+    const { search, severity, sort, limit, offset } = req.query || {};
+    const patients = await dbService.listPatients({
+      search,
+      severity,
+      sort,
+      limit: limit ? Number(limit) : 100,
+      offset: offset ? Number(offset) : 0,
+    });
+    res.json({ success: true, patients });
+  } catch (error) {
+    console.error("Error fetching patients for doctor:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch patients" });
+  }
+});
+
+// (Removed demo start-chat route)
+
 // Socket.io connection handling
 io.on("connection", async (socket) => {
   console.log(`User connected: ${socket.id}`);
@@ -70,16 +130,16 @@ io.on("connection", async (socket) => {
     const session = await chatHandler.initializeSession(socket.id);
     chatHandler.sessions.set(socket.id, session);
 
-    // Send initial welcome message
+    // Send initial welcome without requesting name/email; wait for attach_patient
     socket.emit("bot_message", {
       message:
-        "Hello! I'm your Tricog Health assistant. I'm here to help collect your symptoms and schedule you with our cardiologist. May I please have your full name?",
+        "Hello! I'm your Tricog Health assistant. I've noted your submission. Let's proceed with your symptoms. Please describe what you're experiencing (e.g., chest pain, shortness of breath).",
       timestamp: new Date().toISOString(),
       type: "text",
     });
 
-    // Update session state to collecting name since we already asked
-    session.state = chatHandler.STATES.COLLECTING_NAME;
+    // Start from symptoms by default; if patient not attached yet, we'll attach when event arrives
+    session.state = chatHandler.STATES.COLLECTING_SYMPTOMS;
     chatHandler.sessions.set(socket.id, session);
   } catch (error) {
     console.error("Error initializing session:", error);
@@ -123,6 +183,41 @@ io.on("connection", async (socket) => {
   // Handle user typing
   socket.on("typing", (data) => {
     socket.broadcast.emit("user_typing", { userId: socket.id, ...data });
+  });
+
+  // Attach patient details from pre-submission form
+  socket.on("attach_patient", async (data) => {
+    try {
+      const { email, fullName, phone } = data || {};
+      if (!email && !fullName) return;
+
+      // Persist patient and link to socket
+      let patient;
+      if (email) {
+        patient = await dbService.createOrUpdatePatientByEmail(email, {
+          name: fullName,
+          phone,
+          socketId: socket.id,
+        });
+      } else {
+        patient = await dbService.createOrUpdatePatient(socket.id, {
+          name: fullName,
+          phone,
+        });
+      }
+
+      // Update session with patient
+      const session = chatHandler.getSession(socket.id) || (await chatHandler.initializeSession(socket.id));
+      session.patient = patient;
+      chatHandler.sessions.set(socket.id, session);
+    } catch (err) {
+      console.error("Error in attach_patient:", err);
+      socket.emit("bot_message", {
+        message: "We couldn't attach your details, but you can continue and we'll save your info later.",
+        timestamp: new Date().toISOString(),
+        type: "error",
+      });
+    }
   });
 
   // Handle disconnection

@@ -64,7 +64,10 @@ class CalendarService {
         `📅 Creating calendar appointment for ${patientInfo.name}...`
       );
 
-      const appointmentTime = this.calculateNextAvailableSlot();
+      // Find the next available 30-min slot on the doctor's calendar
+      const baseTime = this.calculateNextAvailableSlot();
+      const calendarId = this.doctorEmail || "primary";
+      const appointmentTime = await this.findNextAvailableSlot(baseTime, 30, calendarId);
       const event = this.createEventObject(
         patientInfo,
         symptomData,
@@ -72,7 +75,7 @@ class CalendarService {
       );
 
       // Use doctor's email as calendar ID to create event on their calendar
-      const calendarId = this.doctorEmail || "primary";
+      
 
       console.log(`📅 Creating event on calendar: ${calendarId}`);
 
@@ -186,6 +189,9 @@ class CalendarService {
     let description = `Cardiology Consultation for ${patientInfo.name}\n\n`;
     description += `📧 Patient Email: ${patientInfo.email}\n`;
     description += `🩺 Primary Symptom: ${symptomData.symptom}\n\n`;
+    if (symptomData?.severity) {
+      description += `🚦 Severity: ${symptomData.severity.decorated} (${symptomData.severity.level})\n\n`;
+    }
     description += `📝 Patient Assessment:\n`;
 
     for (const [category, responses] of Object.entries(symptomData.responses)) {
@@ -211,7 +217,7 @@ class CalendarService {
       .join(" ");
   }
 
-  async checkAvailability(startTime, endTime) {
+  async checkAvailability(startTime, endTime, calendarId) {
     if (!this.calendar) {
       throw new Error("Google Calendar not configured");
     }
@@ -221,11 +227,12 @@ class CalendarService {
         resource: {
           timeMin: startTime.toISOString(),
           timeMax: endTime.toISOString(),
-          items: [{ id: "primary" }],
+          items: [{ id: calendarId || this.doctorEmail || "primary" }],
         },
       });
 
-      const busyTimes = response.data.calendars.primary.busy || [];
+      const calKey = calendarId || this.doctorEmail || "primary";
+      const busyTimes = (response.data.calendars[calKey]?.busy) || response.data.calendars.primary?.busy || [];
       return busyTimes.length === 0; // True if no conflicts
     } catch (error) {
       console.error("Error checking calendar availability:", error);
@@ -233,7 +240,7 @@ class CalendarService {
     }
   }
 
-  async findNextAvailableSlot(preferredTime, duration = 30) {
+  async findNextAvailableSlot(preferredTime, duration = 30, calendarId) {
     const startTime = moment(preferredTime);
     let attempts = 0;
     const maxAttempts = 48; // Check up to 48 slots (12 hours in 15-min increments)
@@ -246,7 +253,8 @@ class CalendarService {
       if (slotStart.hour() >= 9 && slotEnd.hour() < 17) {
         const isAvailable = await this.checkAvailability(
           slotStart.toDate(),
-          slotEnd.toDate()
+          slotEnd.toDate(),
+          calendarId
         );
         if (isAvailable) {
           return slotStart.toDate();
@@ -258,6 +266,93 @@ class CalendarService {
 
     // If no slot found, default to the originally calculated time
     return this.calculateNextAvailableSlot();
+  }
+
+  // Severity-based window: 09:00-13:00 (CRITICAL), 13:00-17:00 (MEDIUM), 17:00-21:00 (LOW)
+  getSeverityWindow(severityLevel, reference = moment()) {
+    const day = moment(reference).startOf("day");
+    const map = {
+      CRITICAL: { startHour: 9, endHour: 13 },
+      MEDIUM: { startHour: 13, endHour: 17 },
+      LOW: { startHour: 17, endHour: 21 },
+    };
+    const cfg = map[severityLevel] || map.LOW;
+    let start = moment(day).hour(cfg.startHour).minute(0).second(0).millisecond(0);
+    let end = moment(day).hour(cfg.endHour).minute(0).second(0).millisecond(0);
+
+    // If current time is past the window end, use next day
+    if (reference.isAfter(end)) {
+      start = start.add(1, "day");
+      end = end.add(1, "day");
+    }
+
+    return { start: start.toDate(), end: end.toDate() };
+  }
+
+  async listAvailableSlotsInWindow(windowStart, windowEnd, options = {}) {
+    const { durationMinutes = 30, stepMinutes = 15, limit = 8 } = options;
+    const slots = [];
+    const calendarId = this.doctorEmail || "primary";
+    let cursor = moment(windowStart);
+    const end = moment(windowEnd);
+    while (cursor.isBefore(end) && slots.length < limit) {
+      const slotStart = cursor.clone();
+      const slotEnd = cursor.clone().add(durationMinutes, "minutes");
+      if (slotEnd.isAfter(end)) break;
+      const isAvailable = await this.checkAvailability(
+        slotStart.toDate(),
+        slotEnd.toDate(),
+        calendarId
+      );
+      if (isAvailable) {
+        slots.push(slotStart.toDate());
+      }
+      cursor.add(stepMinutes, "minutes");
+    }
+    return slots;
+  }
+
+  async getAvailableSlotsForSeverity(severityLevel, options = {}) {
+    if (!this.calendar) {
+      return [];
+    }
+    const window = this.getSeverityWindow(severityLevel, moment());
+    return this.listAvailableSlotsInWindow(window.start, window.end, options);
+  }
+
+  async scheduleAppointmentAt(patientInfo, symptomData, desiredTime) {
+    if (!this.calendar) {
+      return { success: false, error: "Google Calendar not configured" };
+    }
+    try {
+      const calendarId = this.doctorEmail || "primary";
+      const desired = moment(desiredTime);
+      const slotEnd = desired.clone().add(30, "minutes");
+      const isAvailable = await this.checkAvailability(
+        desired.toDate(),
+        slotEnd.toDate(),
+        calendarId
+      );
+      const appointmentTime = isAvailable
+        ? desired.toDate()
+        : await this.findNextAvailableSlot(desired.toDate(), 30, calendarId);
+
+      const event = this.createEventObject(patientInfo, symptomData, appointmentTime);
+      const result = await this.calendar.events.insert({
+        calendarId,
+        resource: event,
+      });
+
+      return {
+        success: true,
+        eventId: result.data.id,
+        appointmentTime: appointmentTime.toISOString(),
+        meetingLink: result.data.htmlLink || result.data.hangoutLink,
+      };
+    } catch (error) {
+      console.error("⚠️ scheduleAppointmentAt failed:", error.message);
+      return { success: false, error: error.message };
+    }
   }
 
   async cancelAppointment(eventId) {
