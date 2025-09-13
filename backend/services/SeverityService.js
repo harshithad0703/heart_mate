@@ -8,8 +8,9 @@ class SeverityService {
   // - Low: otherwise
   analyze(symptomName, responses) {
     const normalized = this._normalizeResponses(responses);
+    const combinedText = Object.values(normalized).join(" \n ");
 
-    if (this._hasCriticalIndicators(symptomName, normalized)) {
+    if (this._hasCriticalIndicators(symptomName, normalized, combinedText)) {
       return { level: "CRITICAL", decorated: "🔴 CRITICAL!!!" };
     }
 
@@ -35,7 +36,7 @@ class SeverityService {
     return out;
   }
 
-  _hasCriticalIndicators(symptomName, responsesByCategory) {
+  _hasCriticalIndicators(symptomName, responsesByCategory, combinedText) {
     // Red flags present?
     const redFlagsText = responsesByCategory["red_flags"] || "";
     const redFlagKeywords = [
@@ -72,6 +73,26 @@ class SeverityService {
         "constant",
       ];
       if (this._containsAny(symptomDetails, chestPainSevere)) return true;
+    }
+
+    // General critical indicators across any symptom (e.g., DVT-like ankle swelling)
+    const dvtLikeKeywords = [
+      "one leg",
+      "unilateral",
+      "single leg",
+      "redness",
+      "warmth",
+      "painful swelling",
+      "sudden swelling",
+      "severe swelling",
+      "dvt",
+      "deep vein thrombosis",
+    ];
+    if (this._containsAny(combinedText, ["sudden", "severe"]) && this._containsAny(combinedText, ["swelling"])) {
+      return true;
+    }
+    if (this._containsAny(combinedText, dvtLikeKeywords)) {
+      return true;
     }
 
     return false;

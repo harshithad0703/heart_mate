@@ -64,7 +64,10 @@ class CalendarService {
         `📅 Creating calendar appointment for ${patientInfo.name}...`
       );
 
-      const appointmentTime = this.calculateNextAvailableSlot();
+      // Find the next available 30-min slot on the doctor's calendar
+      const baseTime = this.calculateNextAvailableSlot();
+      const calendarId = this.doctorEmail || "primary";
+      const appointmentTime = await this.findNextAvailableSlot(baseTime, 30, calendarId);
       const event = this.createEventObject(
         patientInfo,
         symptomData,
@@ -72,7 +75,7 @@ class CalendarService {
       );
 
       // Use doctor's email as calendar ID to create event on their calendar
-      const calendarId = this.doctorEmail || "primary";
+      
 
       console.log(`📅 Creating event on calendar: ${calendarId}`);
 
@@ -214,7 +217,7 @@ class CalendarService {
       .join(" ");
   }
 
-  async checkAvailability(startTime, endTime) {
+  async checkAvailability(startTime, endTime, calendarId) {
     if (!this.calendar) {
       throw new Error("Google Calendar not configured");
     }
@@ -224,11 +227,12 @@ class CalendarService {
         resource: {
           timeMin: startTime.toISOString(),
           timeMax: endTime.toISOString(),
-          items: [{ id: "primary" }],
+          items: [{ id: calendarId || this.doctorEmail || "primary" }],
         },
       });
 
-      const busyTimes = response.data.calendars.primary.busy || [];
+      const calKey = calendarId || this.doctorEmail || "primary";
+      const busyTimes = (response.data.calendars[calKey]?.busy) || response.data.calendars.primary?.busy || [];
       return busyTimes.length === 0; // True if no conflicts
     } catch (error) {
       console.error("Error checking calendar availability:", error);
@@ -236,7 +240,7 @@ class CalendarService {
     }
   }
 
-  async findNextAvailableSlot(preferredTime, duration = 30) {
+  async findNextAvailableSlot(preferredTime, duration = 30, calendarId) {
     const startTime = moment(preferredTime);
     let attempts = 0;
     const maxAttempts = 48; // Check up to 48 slots (12 hours in 15-min increments)
@@ -249,7 +253,8 @@ class CalendarService {
       if (slotStart.hour() >= 9 && slotEnd.hour() < 17) {
         const isAvailable = await this.checkAvailability(
           slotStart.toDate(),
-          slotEnd.toDate()
+          slotEnd.toDate(),
+          calendarId
         );
         if (isAvailable) {
           return slotStart.toDate();

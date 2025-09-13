@@ -81,7 +81,7 @@ export default function DoctorDashboard() {
             )}
           </div>
           <div className="flex items-center space-x-3">
-            <Link to="/" className="text-indigo-600 hover:text-indigo-800 text-sm">Home</Link>
+            {/* <Link to="/" className="text-indigo-600 hover:text-indigo-800 text-sm">Home</Link> */}
             <button
               onClick={() => {
                 try { localStorage.removeItem("tricog_doctor"); } catch(_) {}
