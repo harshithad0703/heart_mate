@@ -23,6 +23,20 @@ function Chat() {
     newSocket.on("connect", () => {
       console.log("Connected to server");
       setIsConnected(true);
+      // Attach patient info if available
+      try {
+        const raw = localStorage.getItem("tricog_patient");
+        if (raw) {
+          const patient = JSON.parse(raw);
+          if (patient && (patient.email || patient.fullName)) {
+            newSocket.emit("attach_patient", {
+              email: patient.email,
+              fullName: patient.fullName,
+              timestamp: new Date().toISOString(),
+            });
+          }
+        }
+      } catch (_) {}
     });
 
     newSocket.on("disconnect", () => {

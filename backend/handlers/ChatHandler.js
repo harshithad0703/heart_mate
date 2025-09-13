@@ -121,9 +121,9 @@ class ChatHandler {
   }
 
   async handleWelcome(session, message) {
-    // Any message in welcome state moves to name collection
-    session.state = this.STATES.COLLECTING_NAME;
-    return "Hello! I'm your Tricog Health assistant. I'm here to help collect your symptoms and schedule you with our cardiologist. May I please have your full name?";
+    // Move directly to symptom collection; name/email are collected via submission
+    session.state = this.STATES.COLLECTING_SYMPTOMS;
+    return "Hello! I'm your Tricog Health assistant. Let's proceed with your symptoms. Please describe what you're experiencing (e.g., chest pain, shortness of breath).";
   }
 
   async handleNameCollection(session, message) {

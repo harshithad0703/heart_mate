@@ -235,6 +235,59 @@ class DatabaseService {
     });
   }
 
+  async createOrUpdatePatientByEmail(email, patientData = {}) {
+    return new Promise((resolve, reject) => {
+      this.db.get(
+        "SELECT * FROM patients WHERE email = ?",
+        [email],
+        (err, row) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+
+          if (row) {
+            const updateQuery = `
+            UPDATE patients 
+            SET name = COALESCE(?, name), 
+                phone = COALESCE(?, phone),
+                socket_id = COALESCE(?, socket_id),
+                updated_at = CURRENT_TIMESTAMP
+            WHERE email = ?
+          `;
+            this.db.run(
+              updateQuery,
+              [patientData.name, patientData.phone, patientData.socketId || null, email],
+              function (err) {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve({ id: row.id, ...row, ...patientData });
+                }
+              }
+            );
+          } else {
+            const insertQuery = `
+            INSERT INTO patients (socket_id, name, email, phone) 
+            VALUES (?, ?, ?, ?)
+          `;
+            this.db.run(
+              insertQuery,
+              [patientData.socketId || null, patientData.name, email, patientData.phone],
+              function (err) {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve({ id: this.lastID, name: patientData.name, email, phone: patientData.phone });
+                }
+              }
+            );
+          }
+        }
+      );
+    });
+  }
+
   async getPatientBySocketId(socketId) {
     return new Promise((resolve, reject) => {
       this.db.get(

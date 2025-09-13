@@ -1,9 +1,11 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { FaComments } from "react-icons/fa";
 import Header from "./Header";
 import "./Homepage.css";
 
 export default function HomePage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("patient");
   const [formData, setFormData] = useState({
     email: "",
@@ -29,7 +31,23 @@ export default function HomePage() {
         body: JSON.stringify(formData),
       });
       const data = await res.json();
-      alert(`Response: ${JSON.stringify(data)}`);
+      if (activeTab === "patient") {
+        if (data && data.success) {
+          // Persist patient info for socket attach on chat load
+          const patientPayload = {
+            email: formData.email,
+            fullName: formData.fullName,
+          };
+          try {
+            localStorage.setItem("tricog_patient", JSON.stringify(patientPayload));
+          } catch (_) {}
+          navigate("/chat");
+        } else {
+          alert(`Failed: ${data?.error || "Unable to proceed"}`);
+        }
+      } else {
+        alert(`Response: ${JSON.stringify(data)}`);
+      }
     } catch (error) {
       console.error(error);
       alert("Error calling backend");
