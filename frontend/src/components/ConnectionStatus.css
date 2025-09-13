@@ -1,0 +1,148 @@
+.connection-status {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 1000;
+  animation: slideInRight 0.3s ease-out;
+  max-width: 300px;
+}
+
+.connection-status.connected {
+  background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+  color: white;
+}
+
+.connection-status.disconnected {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.status-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+}
+
+.status-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-message {
+  font-size: 0.9rem;
+  font-weight: 500;
+  flex: 1;
+}
+
+.connection-time {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Pulse animation for disconnected state */
+.connection-status.disconnected .status-icon {
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .connection-status {
+    top: 70px;
+    right: 15px;
+    left: 15px;
+    max-width: none;
+  }
+
+  .status-content {
+    padding: 10px 14px;
+    border-radius: 10px;
+  }
+
+  .status-message {
+    font-size: 0.85rem;
+  }
+
+  .connection-time {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .connection-status {
+    top: 65px;
+    right: 12px;
+    left: 12px;
+  }
+
+  .status-content {
+    padding: 8px 12px;
+    flex-direction: column;
+    text-align: center;
+    gap: 6px;
+  }
+
+  .status-message {
+    font-size: 0.8rem;
+  }
+
+  .connection-time {
+    font-size: 0.65rem;
+  }
+}
+
+/* Hover effects */
+.connection-status {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.connection-status:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.2);
+}
+
+/* Auto-hide animation */
+.connection-status.auto-hide {
+  animation: slideOutRight 0.3s ease-in forwards;
+  animation-delay: 3s;
+}
+
+@keyframes slideOutRight {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}

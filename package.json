@@ -1,0 +1,28 @@
+{
+  "name": "tricog-chatbot-root",
+  "version": "1.0.0",
+  "description": "AI-powered medical chatbot assistant for cardiologists",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm start\"",
+    "dev-fast": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run fast\"",
+    "install-all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "setup": "npm run install-all && cd backend && npm run setup-db",
+    "test-setup": "node test-setup.js",
+    "test-gemini": "node test-gemini.js",
+    "debug-chat": "node debug-chatbot.js",
+    "start": "npm run dev-fast"
+  },
+  "keywords": [
+    "medical",
+    "chatbot",
+    "ai",
+    "cardiology",
+    "telemedicine"
+  ],
+  "author": "Tricog Health Assistant",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
