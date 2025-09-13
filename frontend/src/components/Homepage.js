@@ -29,8 +29,8 @@ export default function HomePage() {
     e.preventDefault();
     const endpoint =
       activeTab === "patient"
-        ? "http://localhost:8024/api/patient"
-        : "http://localhost:8024/api/doctor";
+        ? "/api/patient"
+        : "/api/doctor";
 
     try {
       const res = await fetch(endpoint, {
