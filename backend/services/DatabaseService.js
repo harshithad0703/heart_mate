@@ -46,6 +46,7 @@ class DatabaseService {
           name TEXT,
           email TEXT,
           phone TEXT,
+          severity TEXT,
           created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
           updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )`,
@@ -94,9 +95,37 @@ class DatabaseService {
           }
           completed++;
           if (completed === queries.length) {
-            console.log("All tables created successfully");
-            resolve();
+            // Run lightweight migrations (add columns if missing)
+            this.ensureSeverityColumn()
+              .then(() => {
+                console.log("All tables created successfully");
+                resolve();
+              })
+              .catch((migrationErr) => {
+                console.warn(
+                  "Warning: schema migration encountered an issue (continuing):",
+                  migrationErr
+                );
+                resolve();
+              });
           }
+        });
+      });
+    });
+  }
+
+  ensureSeverityColumn() {
+    return new Promise((resolve, reject) => {
+      this.db.all("PRAGMA table_info(patients)", (err, rows) => {
+        if (err) return reject(err);
+        const hasSeverity = rows.some((col) => col.name === "severity");
+        if (hasSeverity) return resolve();
+
+        const alter = `ALTER TABLE patients ADD COLUMN severity TEXT`;
+        this.db.run(alter, (alterErr) => {
+          if (alterErr) return reject(alterErr);
+          console.log("Added missing column 'severity' to patients table");
+          resolve();
         });
       });
     });
@@ -188,6 +217,7 @@ class DatabaseService {
             SET name = COALESCE(?, name), 
                 email = COALESCE(?, email), 
                 phone = COALESCE(?, phone),
+                severity = COALESCE(?, severity),
                 updated_at = CURRENT_TIMESTAMP
             WHERE socket_id = ?
           `;
@@ -197,6 +227,7 @@ class DatabaseService {
                 patientData.name,
                 patientData.email,
                 patientData.phone,
+                patientData.severity,
                 socketId,
               ],
               function (err) {
@@ -210,8 +241,8 @@ class DatabaseService {
           } else {
             // Create new patient
             const insertQuery = `
-            INSERT INTO patients (socket_id, name, email, phone) 
-            VALUES (?, ?, ?, ?)
+            INSERT INTO patients (socket_id, name, email, phone, severity) 
+            VALUES (?, ?, ?, ?, ?)
           `;
             this.db.run(
               insertQuery,
@@ -220,6 +251,7 @@ class DatabaseService {
                 patientData.name,
                 patientData.email,
                 patientData.phone,
+                patientData.severity,
               ],
               function (err) {
                 if (err) {
@@ -232,6 +264,20 @@ class DatabaseService {
           }
         }
       );
+    });
+  }
+
+  async updatePatientSeverity(patientId, severityLabel) {
+    return new Promise((resolve, reject) => {
+      const query = `
+        UPDATE patients
+        SET severity = ?, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `;
+      this.db.run(query, [severityLabel, patientId], function (err) {
+        if (err) return reject(err);
+        resolve({ success: true, changes: this.changes });
+      });
     });
   }
 

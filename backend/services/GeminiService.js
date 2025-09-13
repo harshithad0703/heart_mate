@@ -27,6 +27,12 @@ class GeminiService {
       return response.text();
     } catch (error) {
       console.error("Error generating response from Gemini:", error);
+      // Surface original error for upstream fallback handling
+      if (error && error.status === 429) {
+        const err = new Error("Gemini quota exceeded");
+        err.code = 429;
+        throw err;
+      }
       throw new Error("Failed to generate AI response");
     }
   }

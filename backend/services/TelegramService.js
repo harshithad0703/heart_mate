@@ -89,6 +89,10 @@ class TelegramService {
 
     const appointmentTimeStr = new Date(appointmentTime).toLocaleString();
 
+    const severityLine = symptomData.severity
+      ? `\n⚠️ <b>Severity:</b> ${symptomData.severity}\n`
+      : "\n";
+
     return `
 🏥 <b>NEW PATIENT CONSULTATION</b>
 
@@ -100,6 +104,7 @@ class TelegramService {
 🩺 <b>Primary Symptom:</b>
 ${symptomData.symptom}
 
+${severityLine}
 📝 <b>Patient Responses:</b>${formatResponses(symptomData.responses)}
 
 📅 <b>Scheduled Appointment:</b>

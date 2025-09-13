@@ -9,6 +9,7 @@ A comprehensive AI-powered medical chatbot assistant designed specifically for c
 - **Real-time Chat Interface**: Modern, responsive web interface with Socket.io for real-time communication
 - **Doctor Notifications**: Automated Telegram notifications to cardiologists with patient details
 - **Appointment Scheduling**: Automatic Google Calendar integration for appointment booking
+- **Severity Assessment (Doctor-only)**: Rule-based severity classification (🟢 Low, 🟡 Medium!, 🔴 CRITICAL!!!) is computed after Q&A and stored internally; shown only in doctor notifications and calendar events
 - **Secure & Private**: HIPAA-compliant design with encrypted communications
 
 ## 🛠 Tech Stack
@@ -187,9 +188,18 @@ The application will be available at:
 
 When a patient completes their assessment, the doctor receives:
 
-- Telegram message with patient details
-- Google Calendar invitation with comprehensive patient information
+- Telegram message with patient details and severity (doctor-only)
+- Google Calendar event including severity in description (doctor-only)
 - All responses organized by medical categories
+
+### Severity Classification
+
+- The system uses rule-based severity classification after the dataset-driven Q&A completes.
+- Categories and rules:
+  - 🟢 Low: mild symptoms, no red_flags.
+  - 🟡 Medium!: presence of risk factors (e.g., hypertension, diabetes, smoking, high cholesterol, CAD history).
+  - 🔴 CRITICAL!!!: any red_flags answered positively or severe chest pain descriptors (e.g., sudden, tearing, crushing; radiating pain; diaphoresis; syncope; hypoxia; neurological deficits).
+- Visibility: Severity is not exposed to patients in the chat UI. It is stored in the `patients` table and added only to doctor-facing outputs (Telegram + Calendar).
 
 ## 🏥 Medical Data Structure
 
