@@ -1,0 +1,129 @@
+/* General Layout */
+.homepage {
+    min-height: 100vh;
+    background-color: #0b1e4a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    position: relative;
+  }
+  
+  .card {
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    max-width: 900px;
+    overflow: hidden;
+  }
+  
+  /* Left Form Section */
+  .form-section {
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .tabs {
+    display: flex;
+    margin-bottom: 20px;
+  }
+  
+  .tabs button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    font-weight: bold;
+    background: #f1f1f1;
+    transition: background 0.3s;
+    border-radius: 8px;
+    margin-right: 8px;
+  }
+  
+  .tabs button.active {
+    background: #1d4ed8;
+    color: white;
+  }
+  
+  .form input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    outline: none;
+    font-size: 14px;
+  }
+  
+  .form input:focus {
+    border-color: #1d4ed8;
+    box-shadow: 0 0 5px rgba(29, 78, 216, 0.5);
+  }
+  
+  .submit-btn {
+    width: 100%;
+    padding: 12px;
+    background: #1d4ed8;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  
+  .submit-btn:hover {
+    background: #153eab;
+  }
+  
+  /* Right Image Section */
+  .image-section {
+    background: #f9fafb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+  
+  .image-section img {
+    max-width: 250px;
+    height: auto;
+  }
+  
+  /* Chat Icon */
+  .chat-btn {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #1d4ed8;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    padding: 15px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    transition: background 0.3s, transform 0.2s;
+  }
+  
+  .chat-btn:hover {
+    background: #153eab;
+    transform: scale(1.1);
+  }
+  
+  /* Responsive */
+  @media (max-width: 768px) {
+    .card {
+      grid-template-columns: 1fr;
+    }
+  
+    .image-section {
+      display: none;
+    }
+  }
+  
