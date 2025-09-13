@@ -1,6 +1,6 @@
 import React from 'react';
 import './Header.css';
-import logo from "../"
+
 
 const Header = () => {
   return (
@@ -8,7 +8,7 @@ const Header = () => {
       <div className="header-content">
         <div className="header-logo">
         
-            <img src="/logo.png" alt="App Logo" width={160} height={50} />
+            <img src="/logo.png" alt="App Logo" />
           
           {/* <div className="logo-text">
             <h1>Tricog Health</h1>

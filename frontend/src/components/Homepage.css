@@ -1,7 +1,7 @@
 /* General Layout */
 .homepage {
     min-height: 100vh;
-    background-color: #0b1e4a;
+    background-color: #01294E;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -47,7 +47,7 @@
   }
   
   .tabs button.active {
-    background: #1d4ed8;
+    background: #01294E;
     color: white;
   }
   
@@ -62,14 +62,14 @@
   }
   
   .form input:focus {
-    border-color: #1d4ed8;
+    border-color: #01294E;
     box-shadow: 0 0 5px rgba(29, 78, 216, 0.5);
   }
   
   .submit-btn {
     width: 100%;
     padding: 12px;
-    background: #1d4ed8;
+    background: #01294E;
     color: white;
     border: none;
     border-radius: 8px;
@@ -79,7 +79,7 @@
   }
   
   .submit-btn:hover {
-    background: #153eab;
+    background: #01294E;
   }
   
   /* Right Image Section */
@@ -101,7 +101,7 @@
     position: fixed;
     bottom: 20px;
     right: 20px;
-    background: #1d4ed8;
+    background: #01294E;
     color: white;
     border: none;
     border-radius: 50%;
@@ -112,7 +112,7 @@
   }
   
   .chat-btn:hover {
-    background: #153eab;
+    background: #01294E;
     transform: scale(1.1);
   }
   

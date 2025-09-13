@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { FaComments } from "react-icons/fa";
-import Header from "./Header"
-import "./HomePage.css";
+import Header from "./Header";
+import "./Homepage.css";
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState("patient");
