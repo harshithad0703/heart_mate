@@ -362,6 +362,12 @@ class ChatHandler {
         );
         // also reflect it on session.patient for use in downstream services
         session.patient.severity = severity.level;
+        // store case snapshot on patient for doctor dashboard
+        await this.dbService.updatePatientCaseData(session.patient.id, {
+          symptom: session.currentSymptom.name,
+          responses: session.responses,
+          severity: severity.level,
+        });
       } catch (sevSaveErr) {
         console.error("Failed to save patient severity:", sevSaveErr.message);
       }
@@ -382,6 +388,13 @@ class ChatHandler {
             appointmentResult.eventId,
             appointmentResult.appointmentTime
           );
+          try {
+            await this.dbService.updatePatientCaseData(session.patient.id, {
+              appointment_time: appointmentResult.appointmentTime,
+            });
+          } catch (e) {
+            console.error("Failed to persist appointment time on patient:", e.message);
+          }
           appointmentScheduled = true;
           console.log(
             `✅ Calendar appointment scheduled for ${appointmentTime.toLocaleString()}`

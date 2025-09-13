@@ -1,17 +1,25 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FaComments } from "react-icons/fa";
 import Header from "./Header";
 import "./Homepage.css";
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeTab, setActiveTab] = useState("patient");
   const [formData, setFormData] = useState({
     email: "",
     fullName: "",
     password: "",
   });
+
+  // support switching to doctor tab via URL: /?tab=doctor
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get("tab");
+    if (tab === "doctor") setActiveTab("doctor");
+  }, [location.search]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -46,7 +54,14 @@ export default function HomePage() {
           alert(`Failed: ${data?.error || "Unable to proceed"}`);
         }
       } else {
-        alert(`Response: ${JSON.stringify(data)}`);
+        if (data && data.success && data.doctor) {
+          try {
+            localStorage.setItem("tricog_doctor", JSON.stringify(data.doctor));
+          } catch (_) {}
+          navigate("/doctor");
+        } else {
+          alert(`Login failed: ${data?.error || "Invalid credentials"}`);
+        }
       }
     } catch (error) {
       console.error(error);
@@ -55,16 +70,7 @@ export default function HomePage() {
   };
 
   const startChat = async () => {
-    try {
-      const res = await fetch("http://localhost:8024/api/start-chat", {
-        method: "POST",
-      });
-      const data = await res.json();
-      alert("Chat started: " + JSON.stringify(data));
-    } catch (error) {
-      console.error(error);
-      alert("Chat initiation failed");
-    }
+    navigate("/chat");
   };
 
   return (

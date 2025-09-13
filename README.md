@@ -11,6 +11,7 @@ A comprehensive AI-powered medical chatbot assistant designed specifically for c
 - **Appointment Scheduling**: Automatic Google Calendar integration for appointment booking
 - **Secure & Private**: HIPAA-compliant design with encrypted communications
  - **Severity Analysis (Doctor-only)**: Internal rule-based triage computes case severity and shares it only with doctors via notifications and calendar entries. Patients never see severity in the chat.
+ - **Doctor Dashboard**: Web UI to search, filter, and sort patient cases with severity indicators.
 
 ## 🛠 Tech Stack
 
@@ -203,6 +204,16 @@ When a patient completes their assessment, the doctor receives:
 - Telegram message with patient details
 - Google Calendar invitation with comprehensive patient information
 - All responses organized by medical categories
+
+### Doctor Dashboard
+
+- Navigate to `http://localhost:6979/doctor`
+- Features:
+  - Search by name or ID (real-time)
+  - Filter by severity (Low / Medium / Critical)
+  - Sort by severity priority (Critical → Medium → Low)
+  - Pagination (20 per page)
+
 
 ## 🏥 Medical Data Structure
 

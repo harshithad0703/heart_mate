@@ -81,30 +81,45 @@ app.post("/api/patient", async (req, res) => {
   }
 });
 
-// Doctor auth stub (for demo purposes)
+// Doctor auth
 app.post("/api/doctor", async (req, res) => {
   try {
     const { email, password } = req.body || {};
     if (!email || !password) {
       return res.status(400).json({ success: false, error: "Email and password are required" });
     }
-    // Stub: accept any non-empty email+password
-    res.json({ success: true, doctor: { email } });
+    const doctor = await dbService.validateDoctorCredentials(email, password);
+    if (!doctor) {
+      return res.status(401).json({ success: false, error: "Invalid credentials" });
+    }
+    res.json({ success: true, doctor });
   } catch (error) {
     console.error("Error in doctor endpoint:", error);
     res.status(500).json({ success: false, error: "Doctor auth failed" });
   }
 });
 
-// Start chat (no-op placeholder to align with frontend button)
-app.post("/api/start-chat", async (req, res) => {
+// (Removed demo registration route)
+
+// Doctor: list patients with filters/sorting
+app.get("/api/doctor/patients", async (req, res) => {
   try {
-    res.json({ success: true, message: "Chat session can be started via socket connection" });
+    const { search, severity, sort, limit, offset } = req.query || {};
+    const patients = await dbService.listPatients({
+      search,
+      severity,
+      sort,
+      limit: limit ? Number(limit) : 100,
+      offset: offset ? Number(offset) : 0,
+    });
+    res.json({ success: true, patients });
   } catch (error) {
-    console.error("Error starting chat:", error);
-    res.status(500).json({ success: false, error: "Failed to start chat" });
+    console.error("Error fetching patients for doctor:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch patients" });
   }
 });
+
+// (Removed demo start-chat route)
 
 // Socket.io connection handling
 io.on("connection", async (socket) => {
