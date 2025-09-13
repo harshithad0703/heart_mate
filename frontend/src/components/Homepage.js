@@ -5,7 +5,11 @@ import "./Homepage.css";
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState("patient");
-  const [formData, setFormData] = useState({ email: "", fullName: "", password: "" });
+  const [formData, setFormData] = useState({
+    email: "",
+    fullName: "",
+    password: "",
+  });
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -13,7 +17,8 @@ export default function HomePage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    activeTab === "patient"
+    const endpoint =
+      activeTab === "patient"
         ? "http://localhost:8024/api/patient"
         : "http://localhost:8024/api/doctor";
 
@@ -33,7 +38,9 @@ export default function HomePage() {
 
   const startChat = async () => {
     try {
-      const res = await fetch("http://localhost:8024/api/start-chat", { method: "POST" });
+      const res = await fetch("http://localhost:8024/api/start-chat", {
+        method: "POST",
+      });
       const data = await res.json();
       alert("Chat started: " + JSON.stringify(data));
     } catch (error) {
@@ -44,11 +51,15 @@ export default function HomePage() {
 
   return (
     <>
-    <Header />
-    <div className="homepage">
-      <div className="card">
-        {/* Left Side - Form */}
-        <div className="form-section">
+      <Header />
+      <div className="homepage">
+        {/* Left Heart Icon */}
+        <div className="heart-section">
+          <img src="/heart.png" alt="Heart" />
+        </div>
+
+        {/* Right Form */}
+        <div className="form-card">
           <div className="tabs">
             <button
               className={activeTab === "patient" ? "active" : ""}
@@ -96,20 +107,11 @@ export default function HomePage() {
           </form>
         </div>
 
-        {/* Right Side - Image */}
-        <div className="image-section">
-          <img
-            src="https://cdn-icons-png.flaticon.com/512/833/833472.png"
-            alt="Heart"
-          />
-        </div>
+        {/* Floating Chat Button */}
+        <button className="chat-btn" onClick={startChat}>
+          <FaComments size={22} />
+        </button>
       </div>
-
-      {/* Floating Chat Icon */}
-      <button className="chat-btn" onClick={startChat}>
-        <FaComments size={22} />
-      </button>
-    </div>
     </>
   );
 }

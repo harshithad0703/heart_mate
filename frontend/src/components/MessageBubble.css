@@ -22,7 +22,7 @@
 }
 
 .message-bubble.user {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #01294E 0%, #01294E 100%);
   color: white;
   border-bottom-right-radius: 8px;
 }
@@ -58,7 +58,7 @@
 }
 
 .bot-avatar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #01294E 0%, #01294E 100%);
   color: white;
 }
 

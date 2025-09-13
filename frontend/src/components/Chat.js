@@ -117,9 +117,9 @@ function Chat() {
           isConnected={isConnected}
         />
       </main>
-      <footer className="app-footer">
+      {/* <footer className="app-footer">
         <p>Tricog Health Assistant - Secure Healthcare Communication</p>
-      </footer>
+      </footer> */}
     </div>
   );
 }

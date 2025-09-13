@@ -1,129 +1,125 @@
-/* General Layout */
 .homepage {
-    min-height: 100vh;
-    background-color: #01294E;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    position: relative;
-  }
-  
-  .card {
-    background: #ffffff;
-    border-radius: 20px;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    width: 100%;
-    max-width: 900px;
-    overflow: hidden;
-  }
-  
-  /* Left Form Section */
-  .form-section {
-    padding: 40px;
-    display: flex;
+  min-height: 100vh;
+  background-color: #01294E;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+  gap: 60px; /* space between heart and form */
+}
+
+/* Left Heart Section */
+.heart-section img {
+  max-width: 450px;   /* bigger size */
+  height: auto;
+  animation: heartbeat 2s infinite;
+}
+
+@keyframes heartbeat {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.05); }
+  50% { transform: scale(1); }
+  75% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* Right Form Card */
+.form-card {
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  padding: 40px;
+  width: 100%;
+  max-width: 400px;
+}
+
+/* Tabs */
+.tabs {
+  display: flex;
+  margin-bottom: 20px;
+}
+
+.tabs button {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font-weight: bold;
+  background: #f1f1f1;
+  transition: background 0.3s;
+  border-radius: 8px;
+  margin-right: 8px;
+}
+
+.tabs button.active {
+  background: #01294E;
+  color: white;
+}
+
+/* Inputs */
+.form input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  outline: none;
+  font-size: 14px;
+}
+
+.form input:focus {
+  border-color: #01294E;
+  box-shadow: 0 0 5px rgba(29, 78, 216, 0.5);
+}
+
+/* Submit button */
+.submit-btn {
+  width: 100%;
+  padding: 12px;
+  background: #01294E;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.submit-btn:hover {
+  background: #023564;
+}
+
+/* Floating Chat Button */
+.chat-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #01294E;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  padding: 15px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  transition: background 0.3s, transform 0.2s;
+}
+
+.chat-btn:hover {
+  background: #023564;
+  transform: scale(1.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .homepage {
     flex-direction: column;
-    justify-content: center;
+    gap: 30px;
   }
-  
-  .tabs {
-    display: flex;
-    margin-bottom: 20px;
+
+  /* Hide heart image completely on mobile */
+  .heart-section {
+    display: none;
   }
-  
-  .tabs button {
-    flex: 1;
-    padding: 12px;
-    border: none;
-    outline: none;
-    cursor: pointer;
-    font-weight: bold;
-    background: #f1f1f1;
-    transition: background 0.3s;
-    border-radius: 8px;
-    margin-right: 8px;
-  }
-  
-  .tabs button.active {
-    background: #01294E;
-    color: white;
-  }
-  
-  .form input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    outline: none;
-    font-size: 14px;
-  }
-  
-  .form input:focus {
-    border-color: #01294E;
-    box-shadow: 0 0 5px rgba(29, 78, 216, 0.5);
-  }
-  
-  .submit-btn {
-    width: 100%;
-    padding: 12px;
-    background: #01294E;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.3s;
-  }
-  
-  .submit-btn:hover {
-    background: #01294E;
-  }
-  
-  /* Right Image Section */
-  .image-section {
-    background: #f9fafb;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
-  }
-  
-  .image-section img {
-    max-width: 250px;
-    height: auto;
-  }
-  
-  /* Chat Icon */
-  .chat-btn {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: #01294E;
-    color: white;
-    border: none;
-    border-radius: 50%;
-    padding: 15px;
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    transition: background 0.3s, transform 0.2s;
-  }
-  
-  .chat-btn:hover {
-    background: #01294E;
-    transform: scale(1.1);
-  }
-  
-  /* Responsive */
-  @media (max-width: 768px) {
-    .card {
-      grid-template-columns: 1fr;
-    }
-  
-    .image-section {
-      display: none;
-    }
-  }
-  
+}

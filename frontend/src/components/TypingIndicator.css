@@ -22,7 +22,7 @@
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #01294E 0%, #01294E 100%);
   color: white;
   display: flex;
   align-items: center;
@@ -52,7 +52,7 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #667eea;
+  background: #01294E;
   animation: typing-bounce 1.4s infinite ease-in-out;
 }
 
