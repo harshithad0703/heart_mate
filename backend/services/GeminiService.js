@@ -76,12 +76,11 @@ class GeminiService {
     Current progress: question ${currentQuestionIndex} of ${totalQuestions}
     
     The message should:
-    - Be encouraging and brief
+    - Ok or next question looks harsh so use soft replies
     - Do not use words such as "great", "amazing", "wonderful", etc.
-    - Maybe mention progress if appropriate
-    - Keep it to 1 sentence
-    
-    Examples: "Thank you for that information.", "I understand.", "That's helpful to know."
+    - Maximum 5 words
+
+    Examples: Alright, moving on., Let's move on.
     `;
 
     return await this.generateResponse(prompt);
@@ -94,7 +93,7 @@ class GeminiService {
     The message should:
     - Thank them for providing detailed information
     - Mention that their information has been sent to the cardiologist
-    - Inform them that an appointment has been scheduled and they'll receive a calendar invitation
+    - Inform them that an appointment has been scheduled
     - Be reassuring and professional
     - Keep it to 2-3 sentences
     `;
@@ -129,17 +128,18 @@ class GeminiService {
   async generateQuestionTransition(questionText) {
     const prompt = `
     You are asking a medical question to a patient. Make the question sound more conversational and empathetic.
-    
+
     Original question: "${questionText}"
-    
+
     Rephrase it to be:
-    - More conversational and warm
+    - Concise and clear
     - Keep the same medical content
-    - Make it feel like a caring doctor is asking
+    - Single sentence
+    - Do not add any extra details or examples
+    - If already concise, return it unchanged
     
     Return only the rephrased question.
     `;
-
     return await this.generateResponse(prompt);
   }
 
