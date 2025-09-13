@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: heart-mate
+    env: node
+    plan: free
+    buildCommand: |
+      cd backend && npm ci && cd ../frontend && npm ci && npm run build
+    startCommand: |
+      cd backend && NODE_ENV=production PORT=$PORT CLIENT_ORIGIN=https://$RENDER_EXTERNAL_HOSTNAME node server.js
+    autoDeploy: true
+    repo: https://github.com/REPLACE_WITH_YOUR_USERNAME/REPLACE_WITH_YOUR_REPO
+    rootDir: .
+    region: oregon
+    envVars:
+      - key: NODE_VERSION
+        value: 18
+      - key: DATABASE_PATH
+        value: /var/data/tricog_health.db
+      - key: GEMINI_API_KEY
+        sync: false
+    disks:
+      - name: data
+        mountPath: /var/data
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: DOCTOR_TELEGRAM_CHAT_ID
+        sync: false
+      - key: GOOGLE_CALENDAR_CREDENTIALS
+        sync: false
+      - key: DOCTOR_EMAIL
+        sync: false
+

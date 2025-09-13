@@ -6,7 +6,7 @@ const crypto = require("crypto");
 class DatabaseService {
   constructor() {
     this.db = null;
-    this.dbPath = path.join(__dirname, "../database/tricog_health.db");
+    this.dbPath = process.env.DATABASE_PATH || path.join(__dirname, "../database/tricog_health.db");
   }
 
   async initialize() {

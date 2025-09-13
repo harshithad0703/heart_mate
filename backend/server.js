@@ -13,9 +13,10 @@ const ChatHandler = require("./handlers/ChatHandler");
 
 const app = express();
 const server = http.createServer(app);
+const allowedCorsOrigin = process.env.CLIENT_ORIGIN || true; // true allows same-origin in production
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3007",
+    origin: allowedCorsOrigin,
     methods: ["GET", "POST"],
   },
 });
@@ -26,6 +27,12 @@ const PORT = process.env.PORT || 8024;
 app.use(cors());
 app.use(express.json());
 app.use(express.static("public"));
+
+// Serve frontend build in production (single URL deployment)
+const frontendBuildPath = path.join(__dirname, "../frontend/build");
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(frontendBuildPath));
+}
 
 // Initialize services
 const dbService = new DatabaseService();
@@ -232,11 +239,15 @@ async function startServer() {
     await dbService.initialize();
     console.log("Database initialized successfully");
 
+    // SPA fallback for client-side routing in production
+    if (process.env.NODE_ENV === "production") {
+      app.get("*", (req, res) => {
+        res.sendFile(path.join(frontendBuildPath, "index.html"));
+      });
+    }
+
     server.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(
-        `📱 Chat interface will be available on http://localhost:3007`
-      );
       console.log(`💬 Socket.io server ready for connections`);
     });
   } catch (error) {

@@ -14,7 +14,9 @@ function Chat() {
   const navigate = useNavigate(); // ✅ Hook for navigation
 
   useEffect(() => {
-    const newSocket = io("http://localhost:8024", {
+    const socketUrl =
+      process.env.REACT_APP_SOCKET_URL || window.location.origin;
+    const newSocket = io(socketUrl, {
       transports: ["websocket", "polling"],
     });
 
